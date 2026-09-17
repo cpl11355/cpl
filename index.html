@@ -310,6 +310,10 @@ header.scrolled{box-shadow:0 8px 30px rgba(10,31,68,.14)}
 #toTop.show{opacity:1;pointer-events:auto;transform:none}
 .scroll-progress{position:fixed;top:0;left:0;height:3px;width:0;background:linear-gradient(90deg,var(--cyan),var(--blue),#7c3aed);z-index:120}
 body.cover-on{overflow:hidden}
+body.cover-on{animation:coverUnlock 1s ease 40s forwards}
+.site-cover{animation:coverAutoHide .8s ease 40s forwards}
+@keyframes coverAutoHide{to{opacity:0;visibility:hidden}}
+@keyframes coverUnlock{to{overflow:visible}}
 .site-cover{position:fixed;top:0;left:0;right:0;bottom:0;z-index:200;background:#050b24;display:flex;align-items:center;justify-content:center;overflow:hidden;transition:opacity .7s ease,visibility .7s}
 .site-cover.leave{opacity:0;visibility:hidden}
 .site-cover.leave .cover-core{transform:scale(1.06)}
@@ -956,8 +960,8 @@ document.querySelectorAll('section .wrap>.kicker, section .wrap>h2.title, sectio
 document.querySelectorAll('.img-frame, .banner-strip, .proof-rail, .case-cta, .member').forEach(el=>el.classList.add('reveal-scale'));
 function revealDelay(index){return Math.min(index*90,360)}
 ['.grid2','.grid3','.process','.nowfuture','.future-grid'].forEach(selector=>document.querySelectorAll(selector).forEach(group=>Array.from(group.children).filter(el=>el.classList.contains('reveal')).forEach((el,index)=>el.style.setProperty('--reveal-delay',`${revealDelay(index)}ms`))));
-const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('on');io.unobserve(e.target)}}),{threshold:.12});
-document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+const io=('IntersectionObserver' in window)?new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('on');io.unobserve(e.target)}}),{threshold:.12}):null;
+if(io){document.querySelectorAll('.reveal').forEach(el=>io.observe(el));}else{document.querySelectorAll('.reveal').forEach(el=>el.classList.add('on'));}
 const header=document.querySelector('header'), toTop=document.getElementById('toTop'), heroBg=document.querySelector('.hero-bg'), heroInner=document.querySelector('.hero-inner');
 const scenes=[...document.querySelectorAll('.scene')];
 function syncScenes(){scenes.forEach(scene=>{const rect=scene.getBoundingClientRect(),progress=Math.max(0,Math.min(1,(innerHeight-rect.top)/(innerHeight+rect.height))),shift=Math.round((progress-.5)*46);scene.style.setProperty('--scene-shift',`${shift}px`);scene.style.setProperty('--scene-shift-soft',`${Math.round(-shift*.45)}px`);scene.classList.toggle('is-live',rect.top<innerHeight*.7&&rect.bottom>innerHeight*.3)})}
@@ -984,7 +988,7 @@ toTop.addEventListener('click',()=>scrollTo({top:0,behavior:'smooth'}));
 const hamb=document.getElementById('hamb'),mMenu=document.getElementById('mMenu');
 hamb.addEventListener('click',()=>{hamb.classList.toggle('open');mMenu.classList.toggle('open')});
 mMenu.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{hamb.classList.remove('open');mMenu.classList.remove('open')}));
-const cover=document.getElementById('cover'),cv=document.getElementById('coverCanvas'),ctx=cv.getContext('2d');
+const cover=document.getElementById('cover'),cv=document.getElementById('coverCanvas'),ctx=cv?cv.getContext('2d'):null;
 let pts=[],coverGone=false;
 function cvSize(){cv.width=cover.clientWidth;cv.height=cover.clientHeight}
 cvSize();addEventListener('resize',()=>{if(!coverGone)cvSize()});
@@ -1000,10 +1004,10 @@ function drawCover(){
   }
   pts.forEach(p=>{ctx.fillStyle='rgba(140,220,255,.85)';ctx.beginPath();ctx.arc(p.x*W,p.y*H,p.r,0,7);ctx.fill()});
 }
-drawCover();
+if(ctx){drawCover();}else{coverGone=true;}
 function enterSite(){cover.classList.add('leave');document.body.classList.remove('cover-on');setTimeout(()=>{cover.style.display='none';coverGone=true},750)}
 document.getElementById('enterBtn').addEventListener('click',enterSite);
-document.getElementById('replay').addEventListener('click',e=>{e.preventDefault();cover.style.display='flex';requestAnimationFrame(()=>cover.classList.remove('leave'));document.body.classList.add('cover-on');cvSize();coverGone=false;drawCover()});
+document.getElementById('replay').addEventListener('click',e=>{e.preventDefault();cover.style.display='flex';requestAnimationFrame(()=>cover.classList.remove('leave'));document.body.classList.add('cover-on');cvSize();coverGone=false;if(ctx)drawCover()});
 document.querySelectorAll('.cap-tabs button').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('.cap-tabs button').forEach(x=>x.classList.remove('on'));b.classList.add('on');
   document.querySelectorAll('.cap-panel').forEach((p,i)=>p.classList.toggle('on',i==b.dataset.cap));
